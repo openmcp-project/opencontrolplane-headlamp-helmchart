@@ -1,0 +1,11 @@
+apiVersion: v2
+name: headlamp-deployment
+description: Headlamp deployment with OIDC and custom plugins
+type: application
+version: 0.1.0
+appVersion: "0.26.0"
+
+dependencies:
+  - name: headlamp
+    version: "0.26.0"
+    repository: https://headlamp-k8s.github.io/headlamp/

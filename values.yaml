@@ -1,0 +1,68 @@
+# ── Headlamp chart values ─────────────────────────────────────────────────────
+# All values are passed through to the headlamp subchart.
+# Run `helm dependency update` once before the first install.
+#
+# Architecture overview
+# ─────────────────────
+# Headlamp is NOT exposed directly. All browser traffic goes through the BFF
+# (ui-frontend) at /api/headlamp/*. The BFF:
+#   1. Injects Authorization: Bearer <mcp_accessToken> from the encrypted session
+#   2. Forwards the KUBECONFIG header (base64 kubeconfig) stored in the session
+#
+# Multi-tenancy (OSS Headlamp):
+#   Each MCP gets a unique cluster alias (project--workspace--name). The frontend
+#   calls Headlamp's parseKubeConfig endpoint to register the cluster in the
+#   browser's IndexedDB, then navigates to /c/<alias>. Stale aliases from previous
+#   MCPs are deleted via DELETE /cluster/<name> before registering the new one.
+#   IndexedDB is per-browser so different users are naturally isolated.
+#   Headlamp's own OIDC is disabled — the BFF handles all authentication.
+#
+# Required BFF environment variable:
+#   HEADLAMP_UPSTREAM_URL=http://<headlamp-service>.<namespace>.svc.cluster.local
+#
+# The Headlamp Service should be ClusterIP (not exposed via Ingress).
+
+headlamp:
+  config:
+    pluginsDir: "/headlamp/plugins"
+    baseURL: "/api/headlamp"
+    extraArgs:
+      - "-in-cluster"
+      - "-enable-dynamic-clusters"
+      - "-user-plugins-dir=/headlamp/user-plugins"
+      - "-watch-plugins-changes=true"
+
+  # No Ingress — Headlamp is only reachable via the BFF proxy inside the cluster.
+  ingress:
+    enabled: false
+
+  # ── kiosk-plugin (built via scripts/build-kiosk-plugin.sh) ─────────────────
+  # ── crossplane-plugin (built via scripts/build-crossplane-plugin.sh) ────────
+  # TODO: Once these plugins are published to ArtifactHub / npm, replace each
+  #       volume/mount with a pluginsManager entry and remove the generated
+  #       configmap-*-plugin.yaml files.
+  volumes:
+    - name: kiosk-plugin
+      configMap:
+        name: kiosk-plugin
+    - name: crossplane-plugin
+      configMap:
+        name: crossplane-plugin
+
+  volumeMounts:
+    - name: kiosk-plugin
+      mountPath: /headlamp/user-plugins/kiosk-plugin
+      readOnly: true
+    - name: crossplane-plugin
+      mountPath: /headlamp/user-plugins/crossplane-plugin
+      readOnly: true
+
+  pluginsManager:
+    enabled: true
+    baseImage: node:lts-alpine
+    configContent: |
+      plugins:
+        - name: headlamp-flux
+          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux
+      #   - name: headlamp-crossplane
+      #     source: https://github.com/<your-org>/headlamp-crossplane-plugin/releases/latest/download/headlamp-crossplane.tar.gz
