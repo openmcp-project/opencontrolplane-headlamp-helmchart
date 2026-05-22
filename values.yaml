@@ -36,27 +36,6 @@ headlamp:
   ingress:
     enabled: false
 
-  # ── kiosk-plugin (built via scripts/build-kiosk-plugin.sh) ─────────────────
-  # ── crossplane-plugin (built via scripts/build-crossplane-plugin.sh) ────────
-  # TODO: Once these plugins are published to ArtifactHub / npm, replace each
-  #       volume/mount with a pluginsManager entry and remove the generated
-  #       configmap-*-plugin.yaml files.
-  volumes:
-    - name: kiosk-plugin
-      configMap:
-        name: kiosk-plugin
-    - name: crossplane-plugin
-      configMap:
-        name: crossplane-plugin
-
-  volumeMounts:
-    - name: kiosk-plugin
-      mountPath: /headlamp/user-plugins/kiosk-plugin
-      readOnly: true
-    - name: crossplane-plugin
-      mountPath: /headlamp/user-plugins/crossplane-plugin
-      readOnly: true
-
   pluginsManager:
     enabled: true
     baseImage: node:lts-alpine
@@ -64,5 +43,7 @@ headlamp:
       plugins:
         - name: headlamp-flux
           source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux
-      #   - name: headlamp-crossplane
-      #     source: https://github.com/<your-org>/headlamp-crossplane-plugin/releases/latest/download/headlamp-crossplane.tar.gz
+        - name: headlamp-crossplane
+          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_crossplane
+        - name: headlamp-kiosk
+          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_kiosk

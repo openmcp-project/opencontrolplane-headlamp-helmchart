@@ -51,3 +51,19 @@ helm upgrade --install headlamp . \
   --namespace headlamp --create-namespace \
   -f values.yaml
 ```
+
+## Feature toggle
+
+The Headlamp tab in the MCP detail page is hidden by default. Enable it in `frontend-config.json`:
+
+```json
+{
+  "featureToggles": {
+    "enableHeadlamp": true
+  }
+}
+```
+
+## Plugins
+
+Plugins are installed automatically at pod startup by the `pluginsManager` init container. Configured in `values.yaml` under `headlamp.pluginsManager.configContent`.
