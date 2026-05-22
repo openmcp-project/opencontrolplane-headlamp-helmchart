@@ -1,6 +1,6 @@
 # headlamp-deployment
 
-Helm chart for deploying [Headlamp™](https://headlamp.dev) as the internal Kubernetes® UI for OpenMCP control planes.
+Helm chart for deploying [Headlamp™](https://headlamp.dev) as the Kubernetes® UI for OpenMCP control planes.
 
 Headlamp is **not exposed directly**. All browser traffic is proxied through the BFF (`ui-frontend`) at `/api/headlamp/*`, which injects authentication server-side. Headlamp runs as a ClusterIP service and is unreachable from outside the cluster.
 
