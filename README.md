@@ -29,15 +29,6 @@ Headlamp pod (ClusterIP, not externally exposed)
 - `helm` >= 3.10
 - BFF (`ui-frontend`) deployed with `HEADLAMP_UPSTREAM_URL` pointing at the Headlamp service
 
-## Setup
-
-```bash
-# Add the upstream headlamp Helm repo and fetch dependencies
-helm repo add headlamp https://headlamp-k8s.github.io/headlamp/
-helm repo update
-helm dependency update
-```
-
 ## Configuration
 
 The only required configuration is setting `HEADLAMP_UPSTREAM_URL` in the BFF deployment:
@@ -60,48 +51,3 @@ helm upgrade --install headlamp . \
   --namespace headlamp --create-namespace \
   -f values.yaml
 ```
-
-## Feature toggle
-
-The Headlamp tab in the MCP detail page is hidden by default. Enable it in `frontend-config.json`:
-
-```json
-{
-  "featureToggles": {
-    "enableHeadlamp": true
-  }
-}
-```
-
-## Plugins
-
-Plugins are loaded from two sources:
-
-### Remote plugins (pluginsManager)
-
-Installed automatically at pod startup by the `pluginsManager` init container. Configured in `values.yaml` under `headlamp.pluginsManager.configContent`. The Flux plugin is enabled by default.
-
-### Local plugins (ConfigMap)
-
-The kiosk and crossplane plugins are not yet published to ArtifactHub or npm, so they are built locally and mounted into the pod as ConfigMaps. A build script is provided for each.
-
-**Build and apply the kiosk plugin:**
-```bash
-./scripts/build-kiosk-plugin.sh
-kubectl apply -f configmap-kiosk-plugin.yaml -n headlamp
-```
-
-**Build and apply the crossplane plugin:**
-```bash
-./scripts/build-crossplane-plugin.sh
-kubectl apply -f configmap-crossplane-plugin.yaml -n headlamp
-```
-
-Each script clones the respective plugin repository, runs `npm ci && npm run build`, and writes a ready-to-apply ConfigMap manifest to the repo root. The generated `configmap-*-plugin.yaml` files are gitignored.
-
-After applying new ConfigMaps, upgrade the Helm release so the volume mounts pick them up:
-```bash
-helm upgrade --install headlamp . --namespace headlamp -f values.yaml
-```
-
-> **TODO:** Once `headlamp-plugin-kiosk` and `headlamp-plugin-crossplane` are published to ArtifactHub or npm, replace the ConfigMap approach with `pluginsManager` entries in `values.yaml` (same pattern as `headlamp-flux`) and delete the `scripts/build-*-plugin.sh` scripts and their ConfigMap manifests.
