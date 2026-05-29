@@ -44,6 +44,6 @@ headlamp:
         - name: headlamp-flux
           source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux
         - name: headlamp-crossplane
-          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_crossplane
+          source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
         - name: headlamp-kiosk
-          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_kiosk
+          source: https://artifacthub.io/packages/headlamp/kiosk-headlamp-plugin/headlamp_kiosk
