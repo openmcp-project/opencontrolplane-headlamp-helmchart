@@ -46,11 +46,32 @@ All chart values are in `values.yaml`. The key flags passed to Headlamp are:
 
 ## Install / upgrade
 
+Install directly from the OCI registry (recommended):
+
 ```bash
+helm upgrade --install headlamp \
+  oci://ghcr.io/openmcp-project/helm-charts/headlamp-deployment \
+  --version <version> \
+  --namespace headlamp --create-namespace
+```
+
+Or from a local checkout:
+
+```bash
+helm dependency update
 helm upgrade --install headlamp . \
   --namespace headlamp --create-namespace \
   -f values.yaml
 ```
+
+## Releases
+
+Every push to `main` triggers a GitHub Actions workflow that:
+
+1. Packages the chart and pushes a versioned OCI image to `ghcr.io/openmcp-project/helm-charts/headlamp-deployment`.
+2. Creates a GitHub Release tagged `v<version>` with the packaged `.tgz` attached.
+
+The chart version is taken from `Chart.yaml`. Bump `version` there to produce a new release.
 
 ## Feature toggle
 

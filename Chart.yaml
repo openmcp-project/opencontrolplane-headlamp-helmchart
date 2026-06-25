@@ -2,7 +2,7 @@ apiVersion: v2
 name: headlamp-deployment
 description: Headlamp deployment with plugins loaded via pluginsManager
 type: application
-version: 0.1.0
+version: 0.0.4
 appVersion: "0.42.0"
 
 dependencies:

@@ -24,13 +24,20 @@
 
 headlamp:
   config:
+    inCluster: true
     pluginsDir: "/headlamp/plugins"
     baseURL: "/api/headlamp"
     extraArgs:
-      - "-in-cluster"
       - "-enable-dynamic-clusters"
       - "-user-plugins-dir=/headlamp/user-plugins"
       - "-watch-plugins-changes=true"
+
+  livenessProbe:
+    httpGet:
+      path: /api/headlamp/
+  readinessProbe:
+    httpGet:
+      path: /api/headlamp/
 
   # No Ingress — Headlamp is only reachable via the BFF proxy inside the cluster.
   ingress:
@@ -38,12 +45,15 @@ headlamp:
 
   pluginsManager:
     enabled: true
-    baseImage: node:lts-alpine
+    baseImage: node:lts-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
     configContent: |
       plugins:
         - name: headlamp-flux
           source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux
+          version: "0.6.0"
+        - name: headlamp-ocp
+          source: https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane
+          version: "0.0.4"
         - name: headlamp-crossplane
           source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
-        - name: headlamp-kiosk
-          source: https://artifacthub.io/packages/headlamp/kiosk-headlamp-plugin/headlamp_kiosk
+          version: "0.0.4"
