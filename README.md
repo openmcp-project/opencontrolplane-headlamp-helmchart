@@ -18,6 +18,26 @@ Installing this chart creates the following Kubernetes resources:
 
 No Ingress or HTTPRoute is created. Headlamp is only reachable from within the cluster via the BFF.
 
+### Bundled plugins
+
+| Plugin | Purpose |
+|--------|---------|
+| [headlamp-flux](https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux) | Flux GitOps views (default landing view for an MCP) |
+| [headlamp-ocp](https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane) | OCP-specific UI extensions |
+| [headlamp-crossplane](https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane) | Crossplane resource views |
+
+To add or update a plugin, edit `headlamp.pluginsManager.configContent` in `values.yaml`.
+
+## Key Headlamp flags set by this chart
+
+| Flag | Value | Purpose |
+|------|-------|---------|
+| `-base-url` | `/api/headlamp` | Matches the BFF proxy prefix so assets and routes resolve correctly |
+| `-enable-dynamic-clusters` | — | Accept cluster context from the `KUBECONFIG` header per-request |
+| `-user-plugins-dir` | `/headlamp/user-plugins` | Secondary plugin directory |
+| `-watch-plugins-changes` | `true` | Hot-reload plugins without restarting the pod |
+| `-in-cluster` | — | Headlamp reads its own service account for in-cluster API access |
+
 ## Architecture
 
 ```
@@ -52,26 +72,6 @@ npx @headlamp-k8s/pluginctl install --config /config/plugin.yml \
 ```
 
 Plugins are written to a shared `emptyDir` volume (`/headlamp/plugins`) that both the sidecar and the Headlamp container mount. The `--watch` flag keeps the sidecar running so plugins are hot-reloaded without restarting the pod. The plugin list is stored in the `headlamp-plugin-config` ConfigMap and mounted at `/config/plugin.yml`.
-
-### Bundled plugins
-
-| Plugin | Purpose |
-|--------|---------|
-| [headlamp-flux](https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux) | Flux GitOps views (default landing view for an MCP) |
-| [headlamp-ocp](https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane) | OCP-specific UI extensions |
-| [headlamp-crossplane](https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane) | Crossplane resource views |
-
-To add or update a plugin, edit `headlamp.pluginsManager.configContent` in `values.yaml`.
-
-## Key Headlamp flags set by this chart
-
-| Flag | Value | Purpose |
-|------|-------|---------|
-| `-base-url` | `/api/headlamp` | Matches the BFF proxy prefix so assets and routes resolve correctly |
-| `-enable-dynamic-clusters` | — | Accept cluster context from the `KUBECONFIG` header per-request |
-| `-user-plugins-dir` | `/headlamp/user-plugins` | Secondary plugin directory |
-| `-watch-plugins-changes` | `true` | Hot-reload plugins without restarting the pod |
-| `-in-cluster` | — | Headlamp reads its own service account for in-cluster API access |
 
 ## Prerequisites
 
