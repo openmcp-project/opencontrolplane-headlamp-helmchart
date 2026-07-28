@@ -81,7 +81,9 @@ jobs:
           node-version: '20'
 
       - name: Install Playwright
-        run: npx playwright install chromium --with-deps
+        run: |
+          npm install playwright
+          npx playwright install chromium --with-deps
 
       # ── Build all plugins from source ─────────────────────────────────────────
       # Bypass pluginsManager/ArtifactHub — build the actual plugin source
