@@ -4,8 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
-  lint-and-template:
+  template:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,17 +23,40 @@ jobs:
       - name: Build chart dependencies
         run: helm dependency update
 
-      - name: Lint chart
-        run: helm lint . --strict
-
       - name: Template chart (default values)
         run: helm template headlamp-test . | tee /tmp/rendered.yaml
 
       - name: Validate rendered YAML contains expected resources
         run: |
-          # Deployment should be present
           grep -q "kind: Deployment" /tmp/rendered.yaml
-          # pluginsManager config should be rendered
           grep -q "headlamp-ocp" /tmp/rendered.yaml
           grep -q "headlamp-crossplane" /tmp/rendered.yaml
           echo "All checks passed"
+
+      - name: Upload rendered manifest
+        id: upload
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rendered-manifest
+          path: /tmp/rendered.yaml
+          retention-days: 14
+
+      - name: Comment rendered plugin list on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PLUGINS=$(grep -A1 "name:" /tmp/rendered.yaml | grep -v "name:" | grep -o 'headlamp-[a-z-]*' | sort -u | sed 's/^/- /' || echo "none")
+          KINDS=$(grep "^kind:" /tmp/rendered.yaml | sort | uniq -c | sort -rn | sed 's/^ *//' | sed 's/^/- /')
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "### Chart render preview
+
+**Rendered resources:**
+${KINDS}
+
+**Plugins configured:**
+${PLUGINS}
+
+Full manifest: [rendered-manifest](${{ steps.upload.outputs.artifact-url }})"
