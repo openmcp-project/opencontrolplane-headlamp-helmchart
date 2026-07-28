@@ -25,6 +25,7 @@ No Ingress or HTTPRoute is created. Headlamp is only reachable from within the c
 | [headlamp-flux](https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux) | Flux GitOps views (default landing view for an MCP) |
 | [headlamp-ocp](https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane) | OCP-specific UI extensions |
 | [headlamp-crossplane](https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane) | Crossplane resource views |
+| [external-secrets-operator](https://artifacthub.io/packages/headlamp/external-secrets-operator-headlamp-plugin/external-secrets-operator) | External Secrets Operator resource views |
 
 To add or update a plugin, edit `headlamp.pluginsManager.configContent` in `values.yaml`.
 
@@ -104,12 +105,12 @@ helm upgrade --install headlamp . \
 
 ## Releases
 
-Every push to `main` triggers a GitHub Actions workflow that:
+Releases are triggered manually via the **Release** GitHub Actions workflow (`workflow_dispatch`). To publish a new release:
 
-1. Packages the chart and pushes a versioned OCI image to `ghcr.io/openmcp-project/helm-charts/headlamp-deployment`.
-2. Creates a GitHub Release tagged `v<version>` with the packaged `.tgz` attached.
+1. Go to **Actions → Release → Run workflow** and enter the new version (e.g. `0.1.0`).
+2. The workflow packages the chart, pushes a versioned OCI image to `ghcr.io/openmcp-project/helm-charts/headlamp-deployment`, and creates a GitHub Release tagged `v<version>` with the `.tgz` attached and auto-generated release notes.
 
-The chart version is taken from `Chart.yaml`. Bump `version` (and `appVersion` if upgrading Headlamp) there to produce a new release.
+The workflow fails fast if the tag already exists. Bump `appVersion` in `Chart.yaml` if upgrading the Headlamp dependency before triggering the release.
 
 ## Feature toggle
 
