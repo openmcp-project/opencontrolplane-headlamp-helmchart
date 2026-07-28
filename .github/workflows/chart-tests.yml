@@ -221,7 +221,8 @@ jobs:
 
           // Crossplane Overview
           await page.goto(`${BASE}/c/main/crossplane/overview`, { waitUntil: 'domcontentloaded' });
-          await page.waitForSelector('text=provider-nop,text=Crossplane Overview', { timeout: 30000 }).catch(() => {});
+          await page.waitForSelector('text=Crossplane Overview', { timeout: 30000 }).catch(() => {});
+          await page.waitForTimeout(2000);
           await page.screenshot({ path: 'screenshots/crossplane-overview.png', fullPage: true });
 
           // Crossplane Resources
