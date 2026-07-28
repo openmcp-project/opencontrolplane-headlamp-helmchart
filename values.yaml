@@ -57,3 +57,6 @@ headlamp:
         - name: headlamp-crossplane
           source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
           version: "0.0.4"
+        - name: headlamp-external-secrets-operator
+          source: https://artifacthub.io/packages/headlamp/external-secrets-operator-headlamp-plugin/external-secrets-operator
+          version: "0.1.0-beta7"
