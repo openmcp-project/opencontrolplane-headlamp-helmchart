@@ -1,6 +1,8 @@
 name: Chart Tests
 
 on:
+  push:
+    branches: ['**']
   pull_request:
     types: [opened, synchronize]
 
