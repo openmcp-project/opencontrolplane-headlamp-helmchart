@@ -51,15 +51,18 @@ jobs:
           KINDS=$(grep "^kind:" /tmp/rendered.yaml | sort | uniq -c | sort -rn | sed 's/^ *//' | sed 's/^/- /')
           gh pr comment ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --body "### Chart render preview
+            --body "$(cat <<BODY
+          ### Chart render preview
 
-**Rendered resources:**
-${KINDS}
+          Rendered resources:
+          ${KINDS}
 
-**Plugins configured:**
-${PLUGINS}
+          Plugins configured:
+          ${PLUGINS}
 
-Full manifest: [rendered-manifest](${{ steps.upload.outputs.artifact-url }})"
+          Full manifest: [rendered-manifest](${{ steps.upload.outputs.artifact-url }})
+          BODY
+          )"
 
   e2e:
     runs-on: ubuntu-latest
