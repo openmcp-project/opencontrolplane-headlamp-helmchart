@@ -190,7 +190,7 @@ jobs:
       - name: Take screenshots
         run: |
           mkdir -p screenshots
-          cat > /tmp/screenshot.mjs << 'EOF'
+          cat > screenshot.mjs << 'EOF'
           import { chromium } from 'playwright';
 
           const TOKEN = process.env.HEADLAMP_TOKEN ?? '';
@@ -231,7 +231,7 @@ jobs:
 
           await browser.close();
           EOF
-          node /tmp/screenshot.mjs
+          node screenshot.mjs
         env:
           HEADLAMP_TOKEN: ${{ env.HEADLAMP_TOKEN }}
 
