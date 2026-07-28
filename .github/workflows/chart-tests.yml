@@ -106,7 +106,7 @@ jobs:
         with:
           cluster_name: headlamp-e2e
 
-      # ── Install Crossplane (needed for crossplane plugin views) ───────────────
+      # ── Install Crossplane + provider-nop ────────────────────────────────────
 
       - name: Install Crossplane
         run: |
@@ -114,6 +114,18 @@ jobs:
           helm repo update
           helm install crossplane crossplane-stable/crossplane \
             --namespace crossplane-system --create-namespace --wait --timeout 5m
+
+      - name: Install provider-nop
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: pkg.crossplane.io/v1
+          kind: Provider
+          metadata:
+            name: provider-nop
+          spec:
+            package: xpkg.upbound.io/crossplane-contrib/provider-nop:v0.2.0
+          EOF
+          kubectl wait provider/provider-nop --for=condition=Healthy --timeout=5m
 
       # ── Install Headlamp directly (no BFF, no baseURL, no pluginsManager) ────
 
@@ -221,8 +233,7 @@ jobs:
 
           // Crossplane Overview
           await page.goto(`${BASE}/c/main/crossplane/overview`, { waitUntil: 'domcontentloaded' });
-          await page.waitForSelector('text=Crossplane Overview', { timeout: 30000 }).catch(() => {});
-          await page.waitForTimeout(2000);
+          await page.waitForSelector('text=provider-nop', { timeout: 30000 }).catch(() => {});
           await page.screenshot({ path: 'screenshots/crossplane-overview.png', fullPage: true });
 
           // Crossplane Resources
