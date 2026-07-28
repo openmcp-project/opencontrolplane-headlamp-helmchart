@@ -2,5 +2,25 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^values\\.yaml$"],
+      "matchStrings": [
+        "source: (?<registryUrl>https://artifacthub\\.io)/packages/headlamp/(?<depName>[^/]+/[^\\s]+)\\s+version: \"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "custom.artifacthub",
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "customDatasources": {
+    "artifacthub": {
+      "defaultRegistryUrlTemplate": "https://artifacthub.io",
+      "url": "https://artifacthub.io/api/v1/packages/{{replace '/' '%2F' depName}}",
+      "transformTemplates": [
+        "{\"releases\": $map(available_versions, function($v) { {\"version\": $v.version} })}"
+      ]
+    }
+  }
 }
