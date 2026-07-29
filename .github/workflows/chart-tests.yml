@@ -51,12 +51,218 @@ jobs:
           KINDS=$(grep "^kind:" /tmp/rendered.yaml | sort | uniq -c | sort -rn | sed 's/^ *//' | sed 's/^/- /')
           gh pr comment ${{ github.event.pull_request.number }} \
             --repo ${{ github.repository }} \
-            --body "### Chart render preview
+            --body "$(cat <<BODY
+          ### Chart render preview
 
-**Rendered resources:**
-${KINDS}
+          Rendered resources:
+          ${KINDS}
 
-**Plugins configured:**
-${PLUGINS}
+          Plugins configured:
+          ${PLUGINS}
 
-Full manifest: [rendered-manifest](${{ steps.upload.outputs.artifact-url }})"
+          Full manifest: [rendered-manifest](${{ steps.upload.outputs.artifact-url }})
+          BODY
+          )"
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install chromium --with-deps
+
+      # ── Build all plugins from source ─────────────────────────────────────────
+      # Bypass pluginsManager/ArtifactHub — build the actual plugin source
+      # so the E2E always reflects current code, not a published release.
+
+      - name: Build OCP plugin
+        run: |
+          git clone https://github.com/openmcp-project/opencontrolplane-headlamp-plugin /tmp/ocp-plugin
+          cd /tmp/ocp-plugin && npm ci && npm run build
+
+      - name: Build Crossplane plugin
+        run: |
+          git clone https://github.com/openmcp-project/crossplane-headlamp-plugin /tmp/crossplane-plugin
+          cd /tmp/crossplane-plugin && npm ci && npm run build
+
+      # ── Cluster ───────────────────────────────────────────────────────────────
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: headlamp-e2e
+
+      # ── Install Crossplane + provider-nop ────────────────────────────────────
+
+      - name: Install Crossplane
+        run: |
+          helm repo add crossplane-stable https://charts.crossplane.io/stable
+          helm repo update
+          helm install crossplane crossplane-stable/crossplane \
+            --namespace crossplane-system --create-namespace --wait --timeout 5m
+
+      - name: Install provider-nop
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: pkg.crossplane.io/v1
+          kind: Provider
+          metadata:
+            name: provider-nop
+          spec:
+            package: xpkg.upbound.io/crossplane-contrib/provider-nop:v0.2.0
+          EOF
+          kubectl wait provider/provider-nop --for=condition=Healthy --timeout=5m
+
+      # ── Install Headlamp directly (no BFF, no baseURL, no pluginsManager) ────
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install Headlamp
+        run: |
+          helm repo add headlamp https://kubernetes-sigs.github.io/headlamp/
+          helm repo update
+          helm install headlamp headlamp/headlamp \
+            --namespace headlamp \
+            --create-namespace \
+            --set headlamp.config.inCluster=true \
+            --set headlamp.config.pluginsDir=/headlamp/plugins \
+            --set headlamp.config.baseURL="" \
+            --set headlamp.pluginsManager.enabled=false \
+            --wait --timeout 5m
+
+      # ── Inject plugins from source builds ─────────────────────────────────────
+
+      - name: Inject plugins via ConfigMap
+        run: |
+          # OCP plugin
+          kubectl create configmap plugin-ocp-main-js \
+            --from-file=main.js=/tmp/ocp-plugin/dist/main.js \
+            -n headlamp --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create configmap plugin-ocp-pkg \
+            --from-file=package.json=/tmp/ocp-plugin/package.json \
+            -n headlamp --dry-run=client -o yaml | kubectl apply -f -
+
+          # Crossplane plugin
+          kubectl create configmap plugin-crossplane-main-js \
+            --from-file=main.js=/tmp/crossplane-plugin/dist/main.js \
+            -n headlamp --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create configmap plugin-crossplane-pkg \
+            --from-file=package.json=/tmp/crossplane-plugin/package.json \
+            -n headlamp --dry-run=client -o yaml | kubectl apply -f -
+
+          # Patch deployment to mount all plugins
+          kubectl patch deployment headlamp -n headlamp --type=strategic -p '{
+            "spec": {"template": {"spec": {
+              "volumes": [
+                {"name":"ocp-main","configMap":{"name":"plugin-ocp-main-js"}},
+                {"name":"ocp-pkg","configMap":{"name":"plugin-ocp-pkg"}},
+                {"name":"cx-main","configMap":{"name":"plugin-crossplane-main-js"}},
+                {"name":"cx-pkg","configMap":{"name":"plugin-crossplane-pkg"}}
+              ],
+              "containers": [{"name":"headlamp","volumeMounts":[
+                {"name":"ocp-main","mountPath":"/headlamp/plugins/headlamp-ocp/main.js","subPath":"main.js"},
+                {"name":"ocp-pkg","mountPath":"/headlamp/plugins/headlamp-ocp/package.json","subPath":"package.json"},
+                {"name":"cx-main","mountPath":"/headlamp/plugins/headlamp-crossplane/main.js","subPath":"main.js"},
+                {"name":"cx-pkg","mountPath":"/headlamp/plugins/headlamp-crossplane/package.json","subPath":"package.json"}
+              ]}]
+            }}}
+          }'
+          kubectl rollout status deployment/headlamp -n headlamp --timeout=2m
+
+      - name: Create Headlamp service account token
+        run: |
+          TOKEN=$(kubectl create token headlamp --namespace headlamp --duration=1h)
+          echo "HEADLAMP_TOKEN=${TOKEN}" >> $GITHUB_ENV
+
+      - name: Port-forward Headlamp
+        run: |
+          kubectl port-forward -n headlamp svc/headlamp 4466:80 &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:4466 > /dev/null && break
+            sleep 2
+          done
+
+      # ── Screenshots ───────────────────────────────────────────────────────────
+
+      - name: Take screenshots
+        run: |
+          mkdir -p screenshots
+          cat > screenshot.mjs << 'EOF'
+          import { chromium } from 'playwright';
+
+          const TOKEN = process.env.HEADLAMP_TOKEN ?? '';
+          const BASE = 'http://localhost:4466';
+
+          const browser = await chromium.launch();
+          const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+          async function authenticate() {
+            await page.goto(`${BASE}/c/main`, { waitUntil: 'domcontentloaded' });
+            const hasAuth = await page.locator('h1:has-text("Authentication")')
+              .waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+            if (hasAuth) {
+              await page.locator('#token').fill(TOKEN);
+              await Promise.all([
+                page.waitForNavigation({ timeout: 15000 }).catch(() => {}),
+                page.click('button:has-text("Authenticate")'),
+              ]);
+            }
+          }
+
+          await authenticate();
+
+          // OCP Overview
+          await page.goto(`${BASE}/c/main/ocp/overview`, { waitUntil: 'domcontentloaded' });
+          await page.waitForSelector('text=Control Plane Overview', { timeout: 30000 }).catch(() => {});
+          await page.screenshot({ path: 'screenshots/ocp-overview.png', fullPage: true });
+
+          // Crossplane Overview
+          await page.goto(`${BASE}/c/main/crossplane/overview`, { waitUntil: 'domcontentloaded' });
+          await page.waitForSelector('text=provider-nop', { timeout: 30000 }).catch(() => {});
+          await page.screenshot({ path: 'screenshots/crossplane-overview.png', fullPage: true });
+
+          // Crossplane Resources
+          await page.goto(`${BASE}/c/main/crossplane/resources`, { waitUntil: 'domcontentloaded' });
+          await page.waitForSelector('text=Managed Resources', { timeout: 20000 }).catch(() => {});
+          await page.screenshot({ path: 'screenshots/crossplane-resources.png', fullPage: true });
+
+          await browser.close();
+          EOF
+          node screenshot.mjs
+        env:
+          HEADLAMP_TOKEN: ${{ env.HEADLAMP_TOKEN }}
+
+      - name: Upload screenshots
+        id: upload
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: screenshots/
+          retention-days: 14
+
+      - name: Comment screenshot link on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SCREENSHOTS=$(ls screenshots/*.png 2>/dev/null | xargs -I{} basename {} | sed 's/^/- /' || echo "none")
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "### E2E Screenshots
+          Artifact: [e2e-screenshots](${{ steps.upload.outputs.artifact-url }})
+
+          ${SCREENSHOTS}"
