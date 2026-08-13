@@ -1,12 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "github>openmcp-project/.github:renovate-config"
   ],
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^values\\.yaml$"],
+      "fileMatch": [
+        "^values\\.yaml$"
+      ],
       "matchStrings": [
         "source: (?<registryUrl>https://artifacthub\\.io)/packages/headlamp/(?<depName>[^/]+/[^\\s]+)\\s+version: \"(?<currentValue>[^\"]+)\""
       ],
