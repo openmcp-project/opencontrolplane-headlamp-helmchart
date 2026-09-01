@@ -53,7 +53,7 @@ headlamp:
           version: "0.6.0"
         - name: headlamp-ocp
           source: https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane
-          version: "0.0.5"
+          version: "0.0.7"
         - name: headlamp-crossplane
           source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
           version: "0.0.5"
