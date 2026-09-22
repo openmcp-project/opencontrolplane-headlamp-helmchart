@@ -25,7 +25,7 @@ No Ingress or HTTPRoute is created. Headlamp is only reachable from within the c
 | [headlamp-flux](https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_flux) | Flux GitOps views (default landing view for an MCP) |
 | [headlamp-ocp](https://artifacthub.io/packages/headlamp/opencontrolplane-headlamp-plugin/opencontrolplane) | OCP-specific UI extensions |
 | [headlamp-crossplane](https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane) | Crossplane resource views |
-| [headlamp-ocm](https://artifacthub.io/packages/headlamp/ocm-headlamp-plugin/headlamp-ocm) | OCM delivery pipeline views (Repositories, Components, Resources, Deployers) |
+| [headlamp-ocm](https://artifacthub.io/packages/headlamp/open-component-model/headlamp-ocm) | OCM delivery pipeline views (Repositories, Components, Resources, Deployers) |
 | [external-secrets-operator](https://artifacthub.io/packages/headlamp/external-secrets-operator-headlamp-plugin/external-secrets-operator) | External Secrets Operator resource views |
 
 To add or update a plugin, edit `headlamp.pluginsManager.configContent` in `values.yaml`.

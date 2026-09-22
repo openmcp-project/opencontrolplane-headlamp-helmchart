@@ -58,7 +58,7 @@ headlamp:
           source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
           version: "0.0.4"
         - name: headlamp-ocm
-          source: https://artifacthub.io/packages/headlamp/ocm-headlamp-plugin/headlamp-ocm
+          source: https://artifacthub.io/packages/headlamp/open-component-model/headlamp-ocm
           version: "0.1.0"
         - name: headlamp-external-secrets-operator
           source: https://artifacthub.io/packages/headlamp/external-secrets-operator-headlamp-plugin/external-secrets-operator
