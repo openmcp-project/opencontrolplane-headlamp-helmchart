@@ -63,3 +63,6 @@ headlamp:
         - name: headlamp-external-secrets-operator
           source: https://artifacthub.io/packages/headlamp/external-secrets-operator-headlamp-plugin/external-secrets-operator
           version: "0.1.0-beta7"
+        - name: headlamp-kro
+          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_kro
+          version: "0.1.0-alpha"
