@@ -56,7 +56,7 @@ headlamp:
           version: "0.0.10"
         - name: headlamp-crossplane
           source: https://artifacthub.io/packages/headlamp/crossplane-headlamp-plugin/headlamp_crossplane
-          version: "0.0.6"
+          version: "0.0.8"
         - name: headlamp-ocm
           source: https://artifacthub.io/packages/headlamp/ocm-headlamp-plugin/headlamp-ocm
           version: "0.1.0"
@@ -66,3 +66,6 @@ headlamp:
         - name: headlamp-kro
           source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_kro
           version: "0.1.0-alpha"
+        - name: headlamp-metrics-operator
+          source: https://artifacthub.io/packages/headlamp/metrics-operator-headlamp-plugin/headlamp_metrics_operator
+          version: "0.0.2"
